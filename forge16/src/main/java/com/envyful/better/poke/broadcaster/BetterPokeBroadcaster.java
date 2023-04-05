@@ -23,6 +23,8 @@ public class BetterPokeBroadcaster {
 
     private static BetterPokeBroadcaster instance;
 
+    public static String legendaryPlayer = "None";
+
     private ForgeCommandFactory commandFactory = new ForgeCommandFactory();
 
     private BetterPokeBroadcasterConfig config;

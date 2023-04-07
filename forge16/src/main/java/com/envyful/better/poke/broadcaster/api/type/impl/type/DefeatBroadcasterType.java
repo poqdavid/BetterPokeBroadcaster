@@ -3,68 +3,33 @@ package com.envyful.better.poke.broadcaster.api.type.impl.type;
 import com.envyful.api.forge.world.UtilWorld;
 import com.envyful.better.poke.broadcaster.api.type.impl.AbstractBroadcasterType;
 import com.envyful.better.poke.broadcaster.api.util.BroadcasterUtil;
-import com.pixelmonmod.pixelmon.api.battles.BattleResults;
-import com.pixelmonmod.pixelmon.api.events.battles.BattleEndEvent;
+import com.pixelmonmod.pixelmon.api.events.BeatWildPixelmonEvent;
 import com.pixelmonmod.pixelmon.api.util.helpers.BiomeHelper;
-import com.pixelmonmod.pixelmon.battles.controller.participants.BattleParticipant;
-import com.pixelmonmod.pixelmon.battles.controller.participants.WildPixelmonParticipant;
 import com.pixelmonmod.pixelmon.entities.pixelmon.PixelmonEntity;
 import com.pixelmonmod.pixelmon.api.pokemon.Pokemon;
 import com.pixelmonmod.pixelmon.api.pokemon.stats.BattleStatsType;
 import com.pixelmonmod.pixelmon.api.pokemon.stats.IVStore;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import java.util.Map;
-import java.util.Objects;
-
-public class DefeatBroadcasterType extends AbstractBroadcasterType<BattleEndEvent> {
+public class DefeatBroadcasterType extends AbstractBroadcasterType<BeatWildPixelmonEvent> {
 
     public DefeatBroadcasterType() {
-        super("defeat", BattleEndEvent.class);
+        super("defeat", BeatWildPixelmonEvent.class);
     }
 
     @Override
-    protected boolean isEvent(BattleEndEvent event) {
-        PixelmonEntity entity = this.getEntity(event);
-
-        if (entity == null) {
-            return false;
-        }
-
-        BattleResults result = this.getResult(event, EntityType.PLAYER);
-
-        if (result == null) {
-            return false;
-        }
-
-        return result == BattleResults.VICTORY;
-    }
-
-    public BattleResults getResult(BattleEndEvent event, EntityType<?> entityType) {
-        for (Map.Entry<BattleParticipant, BattleResults> entry : event.getResults().entrySet()) {
-            if (Objects.equals(entityType, entry.getKey().getEntity().getType())) {
-                return entry.getValue();
-            }
-        }
-
-        return null;
+    protected boolean isEvent(BeatWildPixelmonEvent event) {
+        return true;
     }
 
     @Override
-    protected PixelmonEntity getEntity(BattleEndEvent event) {
-        for (BattleParticipant battleParticipant : event.getResults().keySet()) {
-            if (battleParticipant instanceof WildPixelmonParticipant) {
-                return (PixelmonEntity)((WildPixelmonParticipant) battleParticipant).getEntity();
-            }
-        }
-
-        return null;
+    protected PixelmonEntity getEntity(BeatWildPixelmonEvent event) {
+        return (event.wpp != null ? (PixelmonEntity)event.wpp.getEntity() : null );
     }
 
     @Override
-    protected String translateEventMessage(BattleEndEvent event, String line, PixelmonEntity pixelmon, ServerPlayerEntity nearestPlayer) {
+    protected String translateEventMessage(BeatWildPixelmonEvent event, String line, PixelmonEntity pixelmon, ServerPlayerEntity nearestPlayer) {
         final Pokemon pokemon = pixelmon.getPokemon();
         IVStore iVs = pokemon.getIVs();
         float ivHP = iVs.getStat(BattleStatsType.HP);
@@ -92,7 +57,7 @@ public class DefeatBroadcasterType extends AbstractBroadcasterType<BattleEndEven
                 + ".png";
 
         return line.replace("%nearest_name%", nearestPlayer == null ? "None" : nearestPlayer.getName().getString())
-                .replace("%player%", (!event.getPlayers().isEmpty() ? event.getPlayers().get(0).getName().getString() : "None"))
+                .replace("%player%", (event.player != null ? event.player.getName().getString() : "None"))
                 .replace("%x%", String.valueOf(pixelmon.getX()))
                 .replace("%y%", String.valueOf(pixelmon.getY()))
                 .replace("%z%", String.valueOf(pixelmon.getZ()))
@@ -123,12 +88,12 @@ public class DefeatBroadcasterType extends AbstractBroadcasterType<BattleEndEven
     }
 
     @Override
-    public ServerPlayerEntity findNearestPlayer(BattleEndEvent event, PixelmonEntity entity, double range) {
+    public ServerPlayerEntity findNearestPlayer(BeatWildPixelmonEvent event, PixelmonEntity entity, double range) {
         return (ServerPlayerEntity) entity.level.getNearestPlayer(entity, range);
     }
 
     @SubscribeEvent
-    public void onBattleEnd(BattleEndEvent event) {
+    public void onBattleEnd(BeatWildPixelmonEvent event) {
         BroadcasterUtil.handleEvent(event);
     }
 }
